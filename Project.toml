@@ -1,0 +1,11 @@
+name = "Todjl"
+uuid = "1e0c5da0-f827-11e8-2c1f-f98b7a1ff7da"
+authors = ["hzgzh <hzgzh@sina.com>"]
+version = "0.1.0"
+
+[deps]
+Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
+CoolProp = "e084ae63-2819-5025-826e-f8e611a84251"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"

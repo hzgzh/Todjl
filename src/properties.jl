@@ -1,0 +1,27 @@
+import CoolProp
+pt(p)=CoolProp.ProsSI("T","P",p*1e5,"Q",0.0,"Water")
+pth(p,t)=CoolProp.PropsSI("H","P",p*1.e5,"T",t+273.15,"Water")/1000.
+pts(p,t)=CoolProp.PropsSI("S","P",p*1.e5,"T",t+273.15,"Water")/1000.
+ptv(p,t)=1/CoolProp.PropsSI("D","P",p*1.e5,"T",t+273.15,"Water")
+pht(p,h)=CoolProp.PropsSI("T","P",p*1.e5,"H",1000h,"Water")-273.15
+phs(p,h)=CoolProp.PropsSI("S","P",p*1.e5,"H",1000h,"Water")/1000.
+phv(p,h)=1/CoolProp.PropsSI("D","P",p*1.e5,"H",1000h,"Water")
+phq(p,h)=CoolProp.PropsSI("Q","P",p*1.e5,"H",1000h,"Water")
+psh(p,s)=CoolProp.PropsSI("H","P",p*1.e5,"S",1000s,"Water")/1000.
+pst(p,s)=CoolProp.PropsSI("T","P",p*1.e5,"S",1000s,"Water")-273.15
+psv(p,s)=1/CoolProp.PropsSI("D","P",p*1.e5,"S",1000s,"Water")
+pqh(p,q)=CoolProp.PropsSI("H","P",p*1.e5,"Q",q,"Water")/1000.0
+pqs(p,q)=CoolProp.PropsSI("S","P",p*1.e5,"Q",q,"Water")/1000.0
+tp(t)=CoolProp.PropsSI("P","T",t+273.15,"Q",0,"Water")/1e5
+thp(t,h)=CoolProp.PropsSI("P","T",t+273.15,"H",1000h,"Water")/1e5
+tsp(t,s)=CoolProp.PropsSI("P","T",t+273.15,"S",1000s,"Water")/1e5
+tqp(t,q)=CoolProp.PropsSI("P","T",t+2731.5,"Q",q,"Water")/1e5
+stmths(t,h)=CoolProp.PropsSI("S","T",t+273.15,"H",1000h,"Water")/1000
+dpdh(p,h)=1/dhdp(p,h)
+dhdp(p,t)=CoolProp.PropsSI("d(Hmass)/dP|T","P",p*1e5,"T",t+273.15,"Water")*100
+dhdt(p,t)=CoolProp.PropsSI("d(Hmass)/dT|P","P",p*1e5,"T",t+273.15,"Water")/1000
+sat_dpdt(p)=CoolProp.PropsSI("d(P)/d(T)|sigma","P",p*1e5,"Q",1,"Water")/1e5
+sat_dtdp(p)=CoolProp.PropsSI("d(T)/d(P)|sigma","P",p*1e5,"Q",1,"Water")*1e5
+sat_dhdp(p,q)=CoolProp.PropsSI("d(Hmass)/d(P)|sigma","P",p*1e5,"Q",0,"Water")*100
+dtdp(p,h)=CoolProp.PropsSI("d(T)/d(P)|Hmass","P",p*1e5,"Hmass",h*1e3,"Water")*1e5
+dtdh(p,h)=CoolProp.PropsSI("d(T)/d(Hmass)|P","P",p*1e5,"Hmass",h*1e3,"Water")*1e3
