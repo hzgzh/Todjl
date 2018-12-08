@@ -1,6 +1,7 @@
 using ForwardDiff
+using Parameters
 export Component,Connection,Network,Var,Bus
-export addcomponents,addconnections
+export addcomponents,addconnections,addbuses,connect
 
 abstract type Component end
 
@@ -64,6 +65,9 @@ function addconnections(nw::Network,conns...)
     for conn in conns
         push!(nw.conns,conn)
     end
+end
+
+function addbuses(nw::Network,buses...)
 end
 
 function connect(s::Component,sid::String,t::Component,tid::String)

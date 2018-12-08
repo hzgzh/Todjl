@@ -1,9 +1,10 @@
-export Condensor,setattr,addconnection,euqations,jacobi
-mutable struct Condensor
+
+
+mutable struct Condensor <: Component
+    label::String
     conns::Dict{Symbol,Connection}
     attrs::Dict{Symbol,Float64}
-    calcmode::Symbol
-    mode::Symbol
+    Condensor(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
 end
 
 function setattr(comp::Condensor;kwarg...)
@@ -49,3 +50,5 @@ function jacobi(comp::Condensor,c::Connection)
     end
     res
 end
+
+export Condensor

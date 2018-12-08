@@ -1,4 +1,4 @@
-export Source
+
 mutable struct Source <: Component
     conns::Dict{Symbol,Connection}
     attrs::Dict{Symbol,Float64}
@@ -17,10 +17,10 @@ function setattrs(comp::Source;kwargs)
     end
 end
 
-function addconnection(comp::Source,c::Connection,si::Symbol)
-    port=[:out]
-    if si in port
-        comp.conns[si]=c
+function addconnection(comp::Source,port::Symbol,c::Connection)
+    ports=[:out]
+    if port in ports
+        comp.conns[port]=c
     else
         print("wrong connection name")
     end
@@ -35,3 +35,6 @@ end
 function jacobi(comp::Source,c::Connection)
     []
 end
+
+
+export Source

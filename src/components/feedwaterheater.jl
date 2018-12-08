@@ -1,8 +1,10 @@
-export FeedwaterHeater,setattr,addconnection,euqations,jacobi
+
 
 mutable struct FeedwaterHeater<:Component
+    label::String
     conns::Dict{Symbol,Connection}
     attrs::Dict{Symbol,Float64}
+    FeedwaterHeater(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
 end
 function setattrs(comp::FeedwaterHeater;kwargs...)
     opts=[:tu,:td]
@@ -64,3 +66,5 @@ function equations(cp::FeedwaterHeater,c::Connection)
     push!(res,dwo.h.val-pth(dwo.p.val,pht(wi.p.val,wi.h.val)+td))
 end
 numberofequations(comp::FeedwaterHeater)=7
+
+export FeedwaterHeater,setattr,addconnection,euqations,jacobi

@@ -1,10 +1,10 @@
-export Dearator,setattr,addconnection,equations,jacobi
 
-mutable struct Dearator
+
+mutable struct Dearator <: Component
+    label::String
     conns::Dict{Symbol,Connection}
     attrs::Dict{Symbol,Float64}
-    calcmode::Symbol
-    mode::Symbol
+    Dearator(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
 end
 
 function setattr(comp::Dearator,sym::Symbol,val::Float64)
@@ -58,3 +58,4 @@ function jacobi(comp::Dearator,c::Connection)
     jac
 end
 
+export Dearator

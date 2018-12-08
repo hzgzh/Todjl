@@ -1,20 +1,23 @@
-export GeneralHeater,setattr,addconnection,euqations,jacobi
 
-mutable struct GeneralHeater
+
+mutable struct GeneralHeater <: Component
+    label::String
     conns::Dict{Symbol,Connection}
     attrs::Dict{Symbol,Float64}
-    calcmode::Symbol
-    mode::Symbol
+    GeneralHeater(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
 end
 
-function setattr(comp::GeneralHeater,sym::Symbol,val::Float64)
-    if sym==:temp
-        attrs[sym]=val
+function setattr(comp::GeneralHeater;kwargs...)
+    opt=[:temp]
+    for key in keys(kwargs)
+        if key in opts
+            attrs[key]=kwargs[key]
+        end
     end
 end
-function addconnection(c::Connection,id::String)
+function addconnection(c::Connection,id::Symbol)
     port=[:in,:out]
-    if s in port
+    if id in port
         comp.conns[s]=c
     else
         println("wrong input")
@@ -43,3 +46,4 @@ function jacobi(comp::GeneralHeater,c::Connection)
     jac
 end
 
+export GeneralHeater,setattr,addconnection,euqations,jacobi

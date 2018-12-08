@@ -1,13 +1,13 @@
-mutable struct Turbine<:Component
+mutable struct Pump<:Component
     label::String
     conns::Dict{Symbol,Connection}
     attrs::Dict{Symbol,Float64}
-    Turbine(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
+    Pump(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
 end
 
-function setattrs(comp::Turbine;kwargs...)
+function setattrs(comp::Pump;kwargs...)
     #cq-流量系数 pr-压比 cpr-临界压比 eta-设计效率
-    opts=[:cq,:pr,:cpr,:eta]
+    opts=[:pr,:eta]
     for key in keys(kwargs)
         if key in opts
             attrs[key]=kwargs[key]
@@ -15,7 +15,7 @@ function setattrs(comp::Turbine;kwargs...)
     end
 end
 
-function calldesignparamers(comp::Turbine)
+function calldesignparamers(comp::Pump)
     in=comp.conns["in"];out=comp.conns["out"]
     ratio=out.p.val/in.p.val
     criticalratio=0.7ratio
@@ -24,7 +24,7 @@ function calldesignparamers(comp::Turbine)
     (ratio,criticalratio,cq,eta)
 end
 
-function addconnection(comp::Turbine,port::Symbol,g,c::Connection)
+function addconnection(comp::Pump,port::Symbol,g,c::Connection)
     ports=[:in,:out]
     if port in ports
         comp.conns[port]=c
@@ -32,7 +32,7 @@ function addconnection(comp::Turbine,port::Symbol,g,c::Connection)
         print("wrong name")
     end
 end
-function equations(comp::Turbine)
+function equations(comp::Pump)
     in=comp.conns[:in];out=comp.conns[:out];attrs=comp.attrs
     cq=attrs[:cq];eta=attrs[:eta];cpr=attrs[:cpr]
     
@@ -45,7 +45,7 @@ end
 
 
 
-function jacobi(comp::Turbine,c::Connection)
+function jacobi(comp::Pump,c::Connection)
     in=comp.conns[:in];out=comp.conns[:out];attrs=comp.attrs
     cq=attrs[:cq];eta=attrs[:eta];cpr=attrs[:cpr]
 
@@ -69,4 +69,4 @@ function jacobi(comp::Turbine,c::Connection)
 end
 
 
-export Turbine,setattr,addconnection,euqations,jacobi
+export Pump,setattr,addconnection,euqations,jacobi
