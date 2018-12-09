@@ -15,7 +15,7 @@ function setattrs(comp::FeedwaterHeater;kwargs...)
     end
 end
 function addconnection(comp::FeedwaterHeater,s::Symbol,c::Connection)
-    ports=[:waterin,:waterout,:steamin,:drain,:prevdrain]
+    ports=[:waterin,:waterout,:steam,:drain,:prevdrain]
     if s in ports
         comp.conns[s]=c
     else
@@ -24,7 +24,7 @@ function addconnection(comp::FeedwaterHeater,s::Symbol,c::Connection)
 end
 function jacobi(cp::FeedwaterHeater,c::Connection)
     conns=cp.conns;attrs=cp.attrs
-    wi=conns[:waterin];wo=conns[:waterout];si=conns[:steamin];
+    wi=conns[:waterin];wo=conns[:waterout];si=conns[:steam];
     dwo=conns[:drain];dpo=conns[:prevdrain];tu=attrs[:tu];td=attrs[:td]
     jac=zeros[7,3]
     if wi==c
@@ -54,7 +54,7 @@ function jacobi(cp::FeedwaterHeater,c::Connection)
 end
 function equations(cp::FeedwaterHeater,c::Connection)
     conns=cp.conns;attrs=cp.attrs
-    wi=conns[:waterin];wo=conns[:waterout];si=conns[:steamin];
+    wi=conns[:waterin];wo=conns[:waterout];si=conns[:steam];
     dwo=conns[:drain];dpo=conns[:prevdrain];tu=attrs[:tu];td=attrs[:td]
     res=[]
     push!(res,wi.m.val-wo.m.val)
