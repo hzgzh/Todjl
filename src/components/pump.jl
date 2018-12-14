@@ -1,13 +1,19 @@
-mutable struct Pump<:Component
+@with_kw mutable struct Pump<:AbstractComponent
     label::String
     conns::Dict{Symbol,Connection}
     attrs::Dict{Symbol,Float64}
+    mode=:design
+    method=:no
     Pump(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
 end
 
+function (cp::Pump)(;kwargs)
+    
+end
+
 function setattrs(comp::Pump;kwargs...)
-    #cq-流量系数 pr-压比 cpr-临界压比 eta-设计效率
-    opts=[:pr,:eta]
+    
+    opts=[:prise,:eta];attrs=comp.attrs
     for key in keys(kwargs)
         if key in opts
             attrs[key]=kwargs[key]
@@ -15,16 +21,9 @@ function setattrs(comp::Pump;kwargs...)
     end
 end
 
-function calldesignparamers(comp::Pump)
-    in=comp.conns["in"];out=comp.conns["out"]
-    ratio=out.p.val/in.p.val
-    criticalratio=0.7ratio
-    cq=in.m.val/sqrt(in.p.val,ptv(in.p.val,in.h.val))/sqrt((1-(ratio-criticalration)^2/(1-criticalratio)^2))
-    eff=(in.h.val-out.h.val)/(in.h.val-psh(in.p.val,phs(out.p.val,in.h.val)))
-    (ratio,criticalratio,cq,eta)
-end
+inlets(comp::Pump)=[comp.conns[:in]];outlets(comp::Pump)=[comp.conns[:out]]
 
-function addconnection(comp::Pump,port::Symbol,g,c::Connection)
+function addconnection(comp::Pump,port::Symbol,c::Connection)
     ports=[:in,:out]
     if port in ports
         comp.conns[port]=c
@@ -32,41 +31,53 @@ function addconnection(comp::Pump,port::Symbol,g,c::Connection)
         print("wrong name")
     end
 end
+
 function equations(comp::Pump)
     in=comp.conns[:in];out=comp.conns[:out];attrs=comp.attrs
-    cq=attrs[:cq];eta=attrs[:eta];cpr=attrs[:cpr]
-    
-
-    res=[]
+    prise=attrs[:prise];eta=attrs[:eta]
+    res=zeros(0)
     push!(res,in.m.val-out.m.val)
-    push!(res,in.m.val-cq*sqrt(in.p.val/phv(in.p.val,in.h.val))*sqrt(1-((out.p.val/in.p.val-cpr)/(1-cpr))^2))
-    push!(res,in.h.val-out.h.val-eta*(in.h.val-psh(out.p.val,phs(in.p.val,in.h.val))))
+    push!(res,out.h.val-in.h.val-9.81*prise/1000.)
+    push!(res,out.p.val-in.p.val-9.8*prise/100)
+    return res
 end
 
 
 
 function jacobi(comp::Pump,c::Connection)
     in=comp.conns[:in];out=comp.conns[:out];attrs=comp.attrs
-    cq=attrs[:cq];eta=attrs[:eta];cpr=attrs[:cpr]
-
-    f1(p0,h0,p1)=-cq*sqrt(p0/phv(p0,h0))*sqrt(1-((p1/p1-cpr)/(1-cpr))^2)
-    f2(p0,h0,p1,h1)=h0-h1-design_ratio*(h0-psh(p1,phs(p0,h0)))
-
-    grad1=ForwardDiff.grad(f1,[in.p.val,in.h.val,out.p.val])
-    grad2=ForwardDiff.grad(f2,[in.p.val,in.h.val,out.p.val,out.h.val])
-    jac=zeros(6,3)
+    prise=attrs[:prise];eta=attrs[:eta]
+    jac=zeros(3,3)
     if in==c
-        jac[1,1]=1
-        jac[2,1]=1;jac[2,2]=grad1[2];jac[2,3]=grad1[1]
-        jac[3,2]=grad2[2];jac[3,3]=grad2[1]
+        jac[1,1]=1;jac[2,2]=-1.0;jac[3,3]=-1.0
     end
 
     if out==c
-        jac[1,1]=-1.0;
-        jac[2,3]=grad1[3]
-        jac[3,2]=grad2[4];jac[3,3]=grad2[3]
+        jac[1,1]=-1.0;jac[2,2]=1.0;jac[3,3]=1.0
     end
+    return jac
 end
 
+function checkconverge(comp::Pump)
+    in,out=comp.conns[:in],comp.conns[:out]
+    if !out.p.isset && out.p.val<in.p.val
+        out.p.val=2.0in.p.val
+    end
+    if !in.p.isset && out.p.val<in.p.val
+        in.p.val=0.5out.p.val
+    end
+    if !out.h.isset && out.h.val<in.h.val
+        out.h.val=1.1*in.h.val
+    end
+    if !in.h.isset && out.h.val<in.h.val
+        in.h.val=0.9*out.h.val
+    end
+end
+function busfunc(comp::AbstractComponent)
 
-export Pump,setattr,addconnection,euqations,jacobi
+end
+
+initsource(comp::Pump,c::Connection)=[1.0,295.,1.0]
+inittarget(comp::Pump,c::Connection)=[1.0,300.,10.]
+
+export Pump,equations,jacobi,setattrs,addconnection

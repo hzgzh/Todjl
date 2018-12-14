@@ -1,13 +1,21 @@
-mutable struct Valve<:Component
+@with_kw mutable struct Valve<:AbstractComponent
     label::String
     conns::Dict{Symbol,Connection}
     attrs::Dict{Symbol,Float64}
+    mode=:design
+    method=:noloss
     Valve(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
+end
+
+function (cp::Valve)(;kwargs)
+    
 end
 
 function setattrs(comp::Valve;kwargs...)
 
 end
+
+inlets(comp::Valve)=[comp.conns[:in]];outlets(comp::Valve)=[comp.conns[:out]]
 
 function addconnection(comp::Valve,port::Symbol,c::Connection)
     ports=[:in,:out]
@@ -19,7 +27,7 @@ function addconnection(comp::Valve,port::Symbol,c::Connection)
 end
 
 function jacobi(comp::Valve,c::Connection)
-    i=comp.conn["in"];o=comp.conn["out"]
+    i=comp.conn[:in];o=comp.conn[:out]
     if c==i
         jac[1,1]=1.0;jac[2,1]=i.h.val;jac[2,2]=i.m.val;jac[3,3]=1-comp.dp
     end
@@ -29,8 +37,8 @@ function jacobi(comp::Valve,c::Connection)
 end
 numberofequations(comp::Valve)=4
 function equations(comp::Valve)
-    i=comp.conn["in"];o=comp.conn["out"]
-    res=[]
+    i=comp.conn[:in];o=comp.conn[:out]
+    res=zeros(0)
     vars=[i.m,i.p,i.h,o.m,o.p,o.h]    
     push!(res,i.m.val-o.m.val)
     push!(res,i.m.val*i.h.val-o.m.val*o.h.val)
@@ -39,4 +47,4 @@ function equations(comp::Valve)
 end
 
 
-export Valve
+export Valve,equations,jacobi,setattrs,addconnection
