@@ -22,18 +22,16 @@ function addconnection(comp::Split,port::Symbol,c::Connection)
 end
 function jacobi(comp::Split,c::Connection)
     in=comp.conns[:in];o1=comp.conns[:out1];o2=comp.conns[:out2]
-    jac=zeros(4,3)
+    jac=zeros(5,3)
     if c==in
-        jac[1,1]=1.0;jac[2,1]=in.h.val;jac[2,2]=in.m.val
-        jac[3,3]=1.0;jac[4,3]=1.0
+        jac[1,1]=1.0;jac[2,2]=1.0;jac[3,2]=1.0
+        jac[4,3]=1.0;jac[5,3]=1.0
     end
     if c==o1
-        jac[1,1]=-1.0;jac[2,1]=-o1.h.val;jac[2,2]=-o1.m.val
-        jac[3,3]=-1.0
+        jac[1,1]=-1.0;jac[2,2]=-1.0;jac[4,3]=-1.0
     end
     if c==o2
-        jac[1,1]=-1.0;jac[2,1]=-o2.h.val;jac[2,2]=-o2.m.val
-        jac[4,3]=-1.0
+        jac[1,1]=-1.0;jac[3,2]=-1.0;jac[5,3]=-1.0
     end
     return jac
 end
@@ -42,7 +40,8 @@ function equations(comp::Split)
     in=comp.conns[:in];o1=comp.conns[:out1];o2=comp.conns[:out2]
     res=zeros(0)
     push!(res,in.m.val-o1.m.val-o2.m.val)
-    push!(res,in.m*in.h.val-o1.m.val*o1.h.val-o2.m.val*o2.h.val)
+    push!(res,in.h.val-o1.h.val)
+    push!(res,in.h.val-o2.h.val)
     push!(res,in.p.val-o1.p.val)
     push!(res,in.p.val-o2.p.val)
     return res
