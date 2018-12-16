@@ -42,7 +42,7 @@ function equations(comp::Condensor)
     else
         push!(res,si.m.val-wo.m.val)
     end
-    push!(res,wo.h.val-pqh(si.p.val,0))
+    push!(res,pqh(si.p.val,0)-wo.h.val)
     push!(res,si.p.val-wo.p.val)
     return res
 end
@@ -55,13 +55,13 @@ function jacobi(comp::Condensor,c::Connection)
     
     jac=zeros(3,3)
     if c == si
-        jac[1,1]=1.0;jac[2,3]=-sat_dhdp(si.p.val,0.0);jac[3,3]=1.0
+        jac[1,1]=1.0;jac[2,2]=eps();jac[2,3]=sat_dhdp(si.p.val,0.0);jac[3,3]=1.0
     end
     if c == di
         jac[1,1]=1.0;
     end
     if c == wo
-        jac[1,1]=-1.0;jac[2,2]=1.0;jac[3,3]=-1.0
+        jac[1,1]=-1.0;jac[2,2]=-1.0;jac[3,3]=-1.0
     end
     return jac
 end

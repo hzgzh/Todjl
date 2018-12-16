@@ -1,6 +1,7 @@
 module Todjl
 import CoolProp
 import Parameters:@with_kw
+import Base:show
 export AbstractComponent,Connection,Network,Var,Bus
 export addcomponents,addconnections,addbuses,connect,equations,jacobi,setattrs
 export addconnection,equations,jacobi,setattr

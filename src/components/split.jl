@@ -47,7 +47,7 @@ function equations(comp::Split)
     return res
 end
 
-initsource(comp::Split,c::Connection)=[1.0,500,1.0]
-inittarget(comp::Split,c::Connection)=[1.0,500,1.0]
+initsource(comp::Split,c::Connection)=[1.0,500.,1.0]
+inittarget(comp::Split,c::Connection)=[1.0,500.,1.0]
 
 export Split,equations,jacobi,setattrs,addconnection

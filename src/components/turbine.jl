@@ -71,7 +71,7 @@ function jacobi(comp::Turbine,c::Connection)
         if mode==:design
             gradeta=etasderive(comp,c)
             jac[1,1]=1;jac[2,2]=gradeta[1];jac[2,3]=gradeta[2]
-            jac[3,1]=pr;
+            jac[3,3]=pr;
         end
         if mode==:offdesign
             gradcone=conederive(comp,c);gradetas=etasderive(comp,c)
@@ -102,7 +102,7 @@ function conefunc(cp::Turbine)
     in.m.val-cq*sqrt(in.p.val/phv(in.p.val,in.h.val))*sqrt(1.0-((out.p.val/in.p.val-cpr)/(1.0-cpr))^2.0)
 end
 
-function conederive(cp::Turbine)
+function conederive(cp::Turbine,c::Connection)
     dm,dh,dp=0.,0.,0.
     if c==cp.conns[:in]
         dm=derive(cp,conefunc,1,:m)
@@ -111,9 +111,9 @@ function conederive(cp::Turbine)
     end
     
     if c==cp.conns[:out]
-        dm=derive(cp,conefunc,1,:m)
-        dh=derive(cp,conefunc,1,:h)
-        dp=derive(cp,conefunc,1,:p)
+        dm=derive(cp,conefunc,2,:m)
+        dh=derive(cp,conefunc,2,:h)
+        dp=derive(cp,conefunc,2,:p)
     end
     (dm,dh,dp)
 end

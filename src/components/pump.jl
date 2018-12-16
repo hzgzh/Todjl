@@ -37,8 +37,8 @@ function equations(comp::Pump)
     prise=attrs[:prise];eta=attrs[:eta]
     res=zeros(0)
     push!(res,in.m.val-out.m.val)
-    push!(res,out.h.val-in.h.val-9.81*prise/1000.)
-    push!(res,out.p.val-in.p.val-9.8*prise/100)
+    push!(res,in.h.val+9.81*prise/1000-out.h.val)
+    push!(res,in.p.val+9.8*prise/100-out.p.val)
     return res
 end
 
@@ -49,11 +49,11 @@ function jacobi(comp::Pump,c::Connection)
     prise=attrs[:prise];eta=attrs[:eta]
     jac=zeros(3,3)
     if in==c
-        jac[1,1]=1;jac[2,2]=-1.0;jac[3,3]=-1.0
+        jac[1,1]=1;jac[2,2]=1.0;jac[3,3]=1.0
     end
 
     if out==c
-        jac[1,1]=-1.0;jac[2,2]=1.0;jac[3,3]=1.0
+        jac[1,1]=-1.0;jac[2,2]=-1.0;jac[3,3]=-1.0
     end
     return jac
 end
@@ -77,7 +77,7 @@ function busfunc(comp::AbstractComponent)
 
 end
 
-initsource(comp::Pump,c::Connection)=[1.0,295.,1.0]
-inittarget(comp::Pump,c::Connection)=[1.0,300.,10.]
+initsource(comp::Pump,c::Connection)=[1.0,300.,10.]
+inittarget(comp::Pump,c::Connection)=[1.0,290.,1.]
 
 export Pump,equations,jacobi,setattrs,addconnection

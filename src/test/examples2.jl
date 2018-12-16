@@ -7,7 +7,7 @@ turb.mode=:design
 setattrs(turb;pr=0.1,eta=0.9)
 cond=Condensor("cond")
 pump=Pump("pump")
-setattrs(pump;prise=1,eta=0.8)
+setattrs(pump;prise=1.,eta=0.8)
 heater=GeneralHeater("gh")
 setattrs(heater,temp=300)
 
@@ -24,10 +24,18 @@ addconnections(nw,c_heater_turb,c_pump_heater,c_cond_pump,c_turb_cond)
 initconnection(nw)
 
 vec,mat=assemble(nw)
+
+for c in nw.conns
+    show(c)
+end
+
+
 @show vec
-@show mat
+show(mat)
 @show length(vec)
 @show size(mat)
+
+inv(mat)
 
 
 

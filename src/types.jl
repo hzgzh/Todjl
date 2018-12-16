@@ -18,9 +18,9 @@ mutable struct Connection
     sid::Symbol
     target::AbstractComponent
     tid::Symbol
-    m::Var
-    h::Var
-    p::Var
+    m::Var{Float64}
+    h::Var{Float64}
+    p::Var{Float64}
     function Connection(source::AbstractComponent,sid::Symbol,target::AbstractComponent,tid::Symbol)
         new(source,sid,target,tid,Var(),Var(),Var())
     end
@@ -31,16 +31,18 @@ function setattrs(c::Connection;kwargs...)
     for kw in keys(kwargs)
         if kw==:m
             print("m")
-            c.m=Var(kwargs[kw])
+            c.m=Var(convert(Float64,kwargs[kw]))
         end
         if kw==:h
-            c.h=Var(kwargs[kw])
+            c.h=Var(convert(Float64,kwargs[kw]))
         end
         if kw==:p
-            c.p=Var(kwargs[kw])
+            c.p=Var(convert(Float64,kwargs[kw]))
         end
     end
 end
+
+Base.show(c::Connection)=println("source=$(c.source.label) target=$(c.target.label) m=$(c.m.val) h=$(c.h.val) p=$(c.p.val)")
 
 mutable struct Bus
     label::String
@@ -95,11 +97,11 @@ function derive(cp::AbstractComponent,func::Function,pos::Int64,dx::Symbol)
 
     dm,dh,dp=0.,0.,0.
     if dx == :m
-        dm=1.e-4
+        dm=cbrt(eps())
     elseif dx==:h
-        dh=1.e-3
+        dh=cbrt(eps())
     elseif dx==:p
-        dp=1.e-5
+        dp=cbrt(eps())
     else
         dx=1.e-5
     end
@@ -114,7 +116,7 @@ function derive(cp::AbstractComponent,func::Function,pos::Int64,dx::Symbol)
     
     conns[pos].m.val-=2.0*dm
     conns[pos].h.val-=2.0*dh
-    conns[pos].p.val-=-2.0*dp
+    conns[pos].p.val-=2.0*dp
     exp-=func(cp)
     
     derive=exp/(dm+dh+dp)/2.0
