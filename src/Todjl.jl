@@ -1,12 +1,12 @@
 module Todjl
 import CoolProp
 import Parameters:@with_kw
-import Base:show
+import Base:show,+
 export AbstractComponent,Connection,Network,Var,Bus
 export addcomponents,addconnections,addbuses,connect,equations,jacobi,setattrs
 export addconnection,equations,jacobi,setattr
-export pt,pth,pts,ptv,pht,phs,phv,phq,psh,pst,psv,pqh,pqs,tp,thp,tsp,tqp,ths
 
++(a::Array{Float64,3},b::Array{Float64,3})=vcat(a,b)
 include("properties.jl")
 include("types.jl")
 include("network.jl")

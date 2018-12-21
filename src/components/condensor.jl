@@ -1,69 +1,107 @@
 @with_kw mutable struct Condensor <: AbstractComponent
     label::String
     conns::Dict{Symbol,Connection}
-    attrs::Dict{Symbol,Float64}
+    attrs::Dict{Symbol,CVar}
     mode=:design
     method=:fixpress
 
     Condensor(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
 end
 
-function (cp::Condensor)(;kwargs)
-
-end
-
-function setattr(comp::Condensor;kwarg...)
-    opts=[:temp];attrs=comp.attrs
-    for key in keys(kwargs)
-        if key in opts
-            attrs[key]=kwargs[key]
-        end
-    end
-end
-
-inlets(comp::Condensor)=[comp.conns[:steam] comp.conns[:drain]]
-outlets(comp::Condensor)=[comp.conns[:waterout]]
-
-function addconnection(comp::Condensor,port::Symbol,c::Connection)
-    ports=[:steam,:drain,:waterout]
-    if port in ports
-        comp.conns[port]=c
+function inlets(cp::Condensor)
+    if haskey(conns,:drain)
+        return [cp.conns[:hi] cp.conns[:drain] cp.conns[:ci]]
     else
-        println("wrong input")
+        return [cp.conns[:hi] cp.conns[:ci]]
     end
 end
 
-function equations(comp::Condensor)
-    si=comp.conns[:steam];wo=comp.conns[:waterout]
-    res=zeros(0)
-    if haskey(comp.conns,:drain)
-        di=comp.conns[:drain]
-        push!(res,si.m.val+di.m.val-wo.m.val)
-    else
-        push!(res,si.m.val-wo.m.val)
+outlets(cp::Condensor)=[cp.conns[:ho] cp.conns[:co]]
+
+portnames(cp::Condensor)=[:hi,:drain,:ci,:ho,:co]
+
+
+
+function equations(cp::Condensor)
+    hi=cp.conns[:hi];ho=cp.conns[:ho]
+    vec=[]
+    vec+==mass_res(cp)
+    res=0
+    for (idx,i) in enumerate(inlets(cp))
+        res+=i.m.val*i.h.val
     end
-    push!(res,pqh(si.p.val,0)-wo.h.val)
-    push!(res,si.p.val-wo.p.val)
+    for (idx,o) in enumerate(outlets(cp))
+        res-=o.m.val+o.h.val
+    end
+    vec+=res
+    vec+=pqh(hi.p.val,0)-ho.h.val
+    vec+=hi.p.val-ho.p.val
+    vec+=ci.p.val-co.p.val
     return res
 end
 
-conns(comp::Condensor)=[:steam,:drain,:waterout]
 
-function jacobi(comp::Condensor,c::Connection)
-    si=comp.conns[:steam];wo=comp.conns[:waterout];
-    di=haskey(comp.conns,:drain) ? comp.conns[:drain] : nothing
-    
-    jac=zeros(3,3)
-    if c == si
-        jac[1,1]=1.0;jac[2,2]=eps();jac[2,3]=sat_dhdp(si.p.val,0.0);jac[3,3]=1.0
+
+function derivatives(cp::Condensor)
+    hi=cp.conns[:hi];ho=cp.conns[:ho];ci=cp.conns[:ci];co=cp.conns[:co]
+    di=haskey(cp.conns,:drain) ? cp.conns[:drain] : nothing
+    der=mass_deriv(cp)
+
+    e_der=zeros(1,length(inlets(cp)),3)
+    for (idx,i) in enumerate(inlets(cp))
+        e_der[1,idx,1]=i.h.val;e_derive[1,idx,2]=i.m.val
     end
-    if c == di
-        jac[1,1]=1.0;
+
+    for (idx,o) in enumerate(outlets(cp))
+        e_der[1,length(inlets(cp))+idx,1]=-o.h.val;e_deriv[1,length(inlets(cp))+idx,2]=-o.m.val
     end
-    if c == wo
-        jac[1,1]=-1.0;jac[2,2]=-1.0;jac[3,3]=-1.0
+    der+=e_der
+    e_der=zeros(1,length(inlet(cp)),3)
+    if haskey(cp.conns,:drain)
+        e_der[1,1,3]=dhdp(hi.p.val,0);e_der[1,4,2]=-1
+    else
+        e_der[1,1,3]=dhdp(hi,p.val,0);e_der[1,3,2]=-1
     end
-    return jac
+    der+=e_der
+
+    p_der=zeros(2,length(inlets(cp)),3)
+    if haskey(cp.conns,:drain)
+        p_der[1,1,3]=1;p_der[1,4,3]=-1;p_der[1,3,3]=1;p_der[1,5,3]=-1
+    else
+        p_der[1,1,3]=1;p_der[1,3,3]=-1;p_der[1,2,3]=1;p_der[1,4,3]=-1
+    end
+    deriv+=p_der
+
+    return der
+
 end
+
+function mass_res(cp::Condenor)
+    si=cp.conns[:steam];wo=cp.conns[:waterout];ci=conns[:coolin];co=conns[:coolout]
+    res=[]
+    if haskey(cp.conns,:drain)
+        di=conns[:drain]
+        res+=si.m.val+di.m.val-wo.m.val
+    else
+        res+=si.m.val-wo.m.val
+    end
+    res+=ci.m.val-co.m.val
+    return res
+end
+
+function mass_deriv(cp::Condensor)
+    mat_deriv=nothing
+    if haskey(cp.conns,:drain)
+        mat=zeros(2,5,3)
+        ma[1,1,1]=1;mat[1,2,1]=1;mat[1,3,1]=-1
+        mat[2,4,1]=1;mat[2,5,1]=-1
+    else
+        mat=zeros(2,4,3)
+        ma[1,1,1]=1;mat[1,2,1]=-1
+        mat[2,3,1]=1;mat[2,4,1]=-1
+    end
+    return mat_deriv
+end
+
 
 export Condensor,equations,jacobi,setattrs,addconnection

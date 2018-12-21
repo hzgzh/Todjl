@@ -1,50 +1,40 @@
 @with_kw mutable struct Valve<:AbstractComponent
     label::String
     conns::Dict{Symbol,Connection}
-    attrs::Dict{Symbol,Float64}
-    mode=:design
-    method=:noloss
-    Valve(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
+    attrs::Dict{Symbol,AbstractComponent}
+    Valve(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,AbstractComponent}())
 end
 
-function (cp::Valve)(;kwargs)
-    
-end
 
-function setattrs(comp::Valve;kwargs...)
+inlets(cp::Valve)=[cp.conns[:in]]
+outlets(cp::Valve)=[cp.conns[:out]]
+portnames(cp::Valve)=[:out]
 
-end
 
-inlets(comp::Valve)=[comp.conns[:in]];outlets(comp::Valve)=[comp.conns[:out]]
-
-function addconnection(comp::Valve,port::Symbol,c::Connection)
-    ports=[:in,:out]
-    if port in port
-        comp.c[port]=c
-    else
-        println("wrong port name")
+function equations(cp::Valve)
+    i=cp.conn[:in];o=cp.conn[:out]
+    res=[]
+    res+=mass_res(cp)  
+    res+=i.h.val-o.h.val
+    if cp.conns[:pr].isset
+        res+=i.p.val*cp.conns[:pr]-o.p.val
     end
-end
-
-function jacobi(comp::Valve,c::Connection)
-    i=comp.conn[:in];o=comp.conn[:out]
-    if c==i
-        jac[1,1]=1.0;jac[2,1]=i.h.val;jac[2,2]=i.m.val;jac[3,3]=1-comp.dp
-    end
-    if c==o
-        jac[1,1]=-1.0;jac[2,1]=-o.h.val;jac[2,2]=-o.m.val;jac[3,3]=-1.0
-    end
-end
-numberofequations(comp::Valve)=4
-function equations(comp::Valve)
-    i=comp.conn[:in];o=comp.conn[:out]
-    res=zeros(0)
-    vars=[i.m,i.p,i.h,o.m,o.p,o.h]    
-    push!(res,i.m.val-o.m.val)
-    push!(res,i.m.val*i.h.val-o.m.val*o.h.val)
-    push!(res,i.p.val*(1-dp)-o.p.val)
     res
 end
 
+function derivativescp::Valve)
+    i=cp.conn[:in];o=cp.conn[:out]
+    der=mass_deriv(cp)
+    e_der=zeros(1,2,3)
+    e_der[1,1,2]=1;e_der[1,2,2]=-1
+    der+=e_der
+
+    if cp.conns[:pr].isset
+        p_der=zeros(1,2,3)
+        p_der[1,1,3]=cp.conns[:pr];p_der[1,2,3]=-1
+        der+=p_der
+    end
+    der
+end
 
 export Valve,equations,jacobi,setattrs,addconnection

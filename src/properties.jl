@@ -1,4 +1,5 @@
-ptpt(p::T) where T<:Real=CoolProp.PropsSI("T","P",p*1.e5,"Q",0.0,"Water")-273.15
+using CoolProp
+pt(p::T) where T<:Real=CoolProp.PropsSI("T","P",p*1.e5,"Q",0.0,"Water")-273.15
 pth(p::S,t::T) where {S<:Real,T<:Real} =CoolProp.PropsSI("H","P",p*1.e5,"T",t+273.15,"Water")/1000.
 pts(p::S,t::T) where {S<:Real,T<:Real} =CoolProp.PropsSI("S","P",p*1.e5,"T",t+273.15,"Water")/1000.
 ptv(p::S,t::T) where {S<:Real,T<:Real} =1.0/CoolProp.PropsSI("D","P",p*1.e5,"T",t+273.15,"Water")

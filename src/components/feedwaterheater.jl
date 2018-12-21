@@ -3,87 +3,147 @@
 @with_kw mutable struct FeedwaterHeater<:AbstractComponent
     label::String
     conns::Dict{Symbol,Connection}
-    attrs::Dict{Symbol,Float64}
+    attrs::Dict{Symbol,Var}
     FeedwaterHeater(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
     mode=:design
     method=:td
 end
 
-function (cp::FeedwaterHeater)(;kwargs)
+inlets(cp::FeedwaterHeater)=
+    haskey(cp.conns,:prevdrain) ? [cp.conns[:hi] cp.conns[:drain] cp.conns[:ci]] : [cp.conns[:hi] cp.conns[:ci] ]
+
+outlets(cp::FeedwaterHeater)=[cp.conns[:ho] cp.conns[:co]]
+
+portnames(cp::FeedwaterHeater)=[:hi,:drain,:ci,:ho,:co]
+
+function equations(cp::FeedwaterHeater)
+    conns=cp.conns;attrs=cp.attrs
+    ci=conns[:ci];co=conns[:co];hi=conns[:hi];
+    co=conns[:ho];di=haskey(conns,:drain) ? conns[:drain] : nothing;tu=attrs[:tu];td=attrs[:td]
+    vec=[]
+    vec+=mass_res(cp)
     
-end
+    res=0.
+    for i in inlets(cp)
+        res+=i.m.val*i.h.val
+    end
+    for o in inlets(cp)
+        res-=o.m.val*o.h.val
+    end
+    vec+=res
 
-function setattrs(comp::FeedwaterHeater;kwargs...)
-    opts=[:tu,:td];attrs=comp.attrs
-    for key in keys(kwargs)
-        if key in opts
-            attrs[key]=kwargs[key]
-        end
+    if cp.attrs[:tu].val_set
+        vec+=ttd_u_func(cp)
     end
-end
 
-inlets(comp::FeedwaterHeater)=[comp.conns[:waterin] comp.conns[:steam] comp.conns[:prevdrain]]
-outlets(comp::FeedwaterHeater)=[comp.conns[:waterout],comp.conns[:drain]]
+    if cp.attrs[:tl].val_set
+        vec+=ttd_l_func(cp)
+    end
 
-function addconnection(comp::FeedwaterHeater,s::Symbol,c::Connection)
-    ports=[:waterin,:waterout,:steam,:drain,:prevdrain]
-    if s in ports
-        comp.conns[s]=c
-    else
-        println("wrong port name")
-    end
-end
-function jacobi(cp::FeedwaterHeater,c::Connection)
-    conns=cp.conns;attrs=cp.attrs
-    wi=conns[:waterin];wo=conns[:waterout];si=conns[:steam];
-    dwo=conns[:drain];dpo=haskey(conns,:prevdrain) ? conns[:prevdrain] : nothing;tu=attrs[:tu];td=attrs[:td]
-    jac=zeros[7,3]
-    if wi==c
-        jac[1,1]=1.0;jac[3,1]=wi.h.val;jac[3,2]=wi.m.val;jac[4,3]=1.0;
-        jac[7,2]=-dhdt(dwo.p,pht(wi.p.val,wi.h.val))*dtdh(wi.p.val,wi.h.val)
-        jac[7,3]=-dhdt(dwo.p,pht(wi.p.val,wi.h.val)+fwh.dd)*dtdp(wi.p.val,wi.h.val)
-    end
-    if wo==c
-        jac[1,1]=-1.0;jac[3,1]=-wo.h.val;jac[3,2]=-wo.m.val
-        jac[4,3]=-1.0;
-        jac[5,2]=1.0
-        jac[5,3]=-dhdp(wo.p,pt(si.p.val)+fwh.td)
-    end
-    if si==c
-        jac[2,1]=1.0;jac[3,1]=si.h.val;jac[3,2]=si.m.val
-        jac[5,3]=1.0
-        jac[6,3]=-dhdt(wo.p.val,pt(si.p.val)+fwh.td)*sat_dtdp(si.p.val)
-    end
-    if dwo=c
-        jac[2,1]=-1.0;jac[3,1]=-dwo.h.val;jac[3,2]=-dwo.m.val
-        jac[5,3]=-1.0
-        jac[7,2]=1.0;jac[7,3]=-dhdp(dwo.p.val,pht(wi.p.val,wi.h.val)+fwh.dd)
-    end
-    if dpo==c
-        jac[2,1]=1.0;jac[3,1]=dpo.h.val;jac[3,2]=dpo.m.val
-    end
-    return jac
-end
-function equations(cp::FeedwaterHeater,c::Connection)
-    conns=cp.conns;attrs=cp.attrs
-    wi=conns[:waterin];wo=conns[:waterout];si=conns[:steam];
-    dwo=conns[:drain];dpo=haskey(conns,:prevdrain) ? conns[:prevdrain] : nothing;tu=attrs[:tu];td=attrs[:td]
-    res=zeros(0)
-    push!(res,wi.m.val-wo.m.val)
-    if haskey(conns,:prevdrain)
-        dpo=conns[:prevdrain]
-        push!(res,si.m.val+dpo.m.val-dwo.m.val)
-        push!(res,wi.m.val*wi.h.val-wo.m.val*wo.h.val+si.m.val*si.h.val-dwo.m.val*dwo.h.val+dpo.m.val*dpo.h.val)
-    else
-        push!(res,si.m.val-dwo.m.val)
-        push!(res,wi.m.val*wi.h.val-wo.m.val*wo.h.val+si.m.val*si.h.val-dwo.m.val*dwo.h.val)
-    end
-    push!(res,wi.p.val-wo.p.val)
-    push!(res,si.p.val-dwo.p.val)
-    push!(res,wo.h.val-pth(wo.p.val,pt(si.p.val)+tu))
-    push!(res,dwo.h.val-pth(dwo.p.val,pht(wi.p.val,wi.h.val)+td))
+    vec+=hi.p.val-ho.p.val
+    vec+=ci.p.val-co.p.val
+ 
     return res
 end
-numberofequations(comp::FeedwaterHeater)=7
+
+function derivatives(cp::FeedwaterHeater)
+    conns=cp.conns;attrs=cp.attrs
+    ci=conns[:ci];co=conns[:co];hi=conns[:hi];
+    ho=conns[:ho];di=haskey(conns,:drain) ? conns[:drain] : nothing;tu=attrs[:tu];td=attrs[:td]
+    der=mass_deriv(cp)
+        
+    e_derive=zeros(1,length(inlets(cp)),3)
+    for (idx,i) in enumerate(inlets(cp))
+        e_der[1,idx,1]=i.h.val;e_derive[1,idx,2]=i.m.val
+    end
+
+    for (idx,o) in enumerate(outlets(cp))
+        e_der[1,length(inlets(cp))+idx,1]=-o.h.val;e_der[1,length(inlets(cp))+idx,2]=-o.m.val
+    end
+    der+=e_der
+
+    if cp.attrs[:td].val_set
+        der+=ttd_u_deriv(cp)
+    end
+
+    if cp.attrs[:tl].val_set
+        der+=ttd_l_deriv(cp)
+    end
+
+    p_der=zeros(2,length(inlets(cp)),3)
+    if haskey(cp.conns,:drain)
+        p_der[1,1,3]=1;p_der[1,2,3]=1;p_dere[1,4,3]=-1
+        p_der[1,3,3]=1;p_der[1,5,3]=-1
+    else
+        p_der[1,1,3]=1;p_der[1,3,3]=-1
+        p_der[1,2,3]=1;p_der[1,4,3]=-1
+    end
+    
+    der+=p_deriv
+
+    return der
+end
+
+function ttd_u_func(cp::FeedwaterHeater)
+    co=cp.conns[:co];hi=cp.conns[:hi];tu=cp.attrs[:tu].val
+    return co.h.val-pth(co.p.val,pt(hi.p.val)+tu)
+end
+
+function ttd_u_deriv(cp::FeedwaterHeater)
+    deriv=zeros(1,length(inlets(cp)),3)
+    deriv[1,1,3]=derive(cp,ttd_u_func,1,:p)
+    if haskey(cp.conns,:drain)
+        deriv[1,5,2]=1;deriv[1,5,3]=derive(cp,ttd_u_func,5,:p)
+    else
+        deriv[1,4,2]=1;deriv[1,4,3]=derive(cp,ttd_u_func,4,:p)
+    end
+    return deriv
+end
+
+function ttd_l_func(cp::FeedwaterHeater)
+    ho=cp.conns[:ho];ci=cp.conns[:ci];td=cp.attrs[:tl].val
+    return ho.h.val-pth(ho.p.val,pht(ci.p.val,ci.h.val)+td)
+end
+
+function ttd_l_deriv(cp::FeedwaterHeater)
+    deriv=zeros(1,length(inlets(cp)),3)
+    if haskey(cp.conns,:prevdrain)
+        deriv[1,4,2]=1;deriv[1,4,3]=derive(cp,ttd_l_func,4,:p)
+        deriv[1,3,2]=derive(cp,ttd_l_func,3,:h);deriv[1,3,3]=deriv(cp,ttd_l_func,3,:p)
+    else
+        deriv[1,3,2]=1;deriv[1,3,3]=derive(cp.ttd_l_func,3,:p)
+        deriv[1,2,2]=derive(cp,ttd_l_func,2,:h);deriv[1,2,3]=derive(cp,ttd_l_func,2,:p)
+    end
+    return deriv
+end
+
+function mass_res(cp::FeedwaterHeater)
+    conns=cp.conns;attrs=cp.attrs
+    ci=conns[:ci];co=conns[:co];hi=conns[:hi];ho=conns[:ho];
+    res=[]
+    if haskey(cp.conns,:drain)
+        di=conns[:drain]
+        res+=hi.m.val+di.m.va-ho.m.val
+        res+=ci.m.val-co.m.val
+    else
+        res+=hi.m.val-ho.m.val
+        res+=ci.m.val-co.m.val
+    end
+    return res
+end
+
+function mass_deriv(cp::FeedwaterHeater)
+    deriv=nothing
+    if haskey(cp.conns,:prevdrain)
+        deriv=zeros(2,5,3)
+        deriv[1,1,1]=1;deriv[1,2,1]=1;derive[1,3,1]=1
+        deriv[2,4,1]=-1;derive[2,5,1]=-1
+    else
+        deriv=zeros(2,4,3)
+        deriv[1,1,1]=1;deriv[1,2,1]=1
+        deriv[2,3,1]=-1;derive[2,4,1]=-1
+    end
+    return deriv
+end
 
 export FeedwaterHeater,equations,jacobi,setattrs,addconnection

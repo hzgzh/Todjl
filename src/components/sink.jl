@@ -6,8 +6,10 @@
     method=:no
 end
 
-function (cp::Sink)(;kwargs)
-    
-end
+inlets(cp::Source)=[cp.conns[:in]]
+
+outlets(cp::Source)=[]
+
+portnames(cp::Source)=[:in]
 
 export Sink

@@ -1,5 +1,3 @@
-
-
 @with_kw mutable struct Dearator <: AbstractComponent
     label::String
     conns::Dict{Symbol,Connection}
@@ -9,64 +7,51 @@
     method=:steampress
 end
 
-function (cp::Dearator)(;kwargs)
+inlets(cp::Dearator)=[cp.conns[:hi] cp.conns[:ci] cp.conns[:drain]]
+
+outlets(cp::Dearator)=[cp.conns[:co]]
+
+portnames(cp::Dearator)=[:hi,:ci,:drain,:co]
+
+function equations(cp::Dearator)
+    ci=cp.conns[:ci];hi=cp[:hi];di=cp[:drain];co=cp.conns[:co];a=cp.attrs
+    vec=[]
+    vec+=mat_res(cp)
+
+    res=0
+    for (idx,i) in enumerate(inlets(cp))
+        res+=i.m.val*i.h.val
+    end
+    for (idx,o) in enumerate(outlets(cp))
+        res-=o.m.val*o.h.val
+    end
+    vec+=res
     
+    vec+=co.h.val-pqh(hi.p.val,0)
+    vec=hi.p.val-co.p.val
+    return vec
 end
 
-function setattr(comp::Dearator,sym::Symbol,val::Float64)
-    attrs=comp.attrs
-    if sym==:temp
-        attrs[sym]=val
+function derivatives(cp::Dearator)
+    wi=cp.conns[:waterin];si=cp[:steam];di=cp[:drain];wo=cp.conns[:waterout];a=cp.attrs
+    der=mat_deriv(cp)
+
+    e_der=zeros(1,4,3)
+    for (idx,i) in enumerate(inlets(cp))
+        e_der[1,idx,1]=i.h.val;e_der[1,idx,2]=i.m.val
     end
-end
-
-inlets(comp::Dearator)=[comp.conns[:waterin] comp.conns[:steam] comp.conns[:drain]]
-outlets(comp::Dearator)=[comp.conns[:waterout]]
-
-function addconnection(c::Connection,id::String)
-    port=[:steam,:waterin,:drain,:waterout]
-    if s in port
-        comp.conns[s]=c
-    else
-        println("wrong input")
+    for (idx,i) in enumerate(outlets(cp))
+        e_der(1,idx+length(inlets(cp)),1)=-i.h.val;e_der(1,idx+length(inlets(cp)),2)=-i.m.val
     end
-end
-
-function equations(comp::Dearator)
-    wi=comp.conns[:waterin];si=comp[:steam];di=comp[:drain];wo=comp.conns[:waterout];a=comp.attrs
-    res=zeros(0)
-    push!(res,wi.m.val+si.m.val+di.m.val-wo.m.val)
-    push!(res,wi.m.val*wi.h.val+si.m.val*si.h.val+di.m.val*di.h.val-wo.m.val*wo.h.val)
-    push!(res,wo.h.val-pqh(si.p.val,0))
-    push!(res,si.p.val-wo.p.val)
-    return res
-end
-
-conns(comp::Dearator)=[:waterin,:steam,:drain,:waterout]
-
-function jacobi(comp::Dearator,c::Connection)
-    wi=comp.conns[:waterin];si=comp[:steam];di=comp[:drain];wo=comp.conns[:waterout];a=comp.attrs
-    jac=zeros(4,3)
-    if c==wi
-        jac[1,1]=1;jac[2,1]=wi.h.val;;jac[2,2]=wi.m.val
-    end
-
-    if c==si
-        jac[1,1]=1;
-        jac[2,1]=si.h.val;jac[2,2]=si.m.val
-        jac[3,3]=-sat_dhdp(si.p.val,0)
-        jac[4,3]=1
-    end
-
-    if c==di
-        jac[1,1]=1;jac[2,1]=di.h.val;jac[2,2]=di.m.val;
-    end
-
-    if c==wo
-        jac[1,1]=-1;jac[2,1]=-wo.h.val;jac[2,2]=-wo.m.val
-        jac[3,2]=1;jac[4,3]=-1
-    end
-    return jac
+    der+=e_der
+    e_der=zeros(1,4,3)
+    e_der[1,4,2]=1.0;e_der[1,1,3]=-dhdp(hi.p.val,0)
+    der+=e_der
+    p_der=zeros(1,4,3)
+    p_der[1,1,3]=1.0;p_der[1,4,3]=-1.0
+    der+=e_der
+    
+    return der
 end
 
 export Dearator,equations,jacobi,setattrs,addconnection

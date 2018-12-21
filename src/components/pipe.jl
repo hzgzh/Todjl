@@ -1,52 +1,38 @@
 @with_kw mutable struct Pipe<:AbstractComponent
     label::String
     conns::Dict{Symbol,Connection}
-    attrs::Dict{Symbol,Float64}
+    attrs::Dict{Symbol,CVar}
     mode=:design
     method=:no
     Pipe(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
 end
 
-function (cp::Pipe)(;kwargs)
-    
+
+inlets(cp::Pipe)=[cp.conns[:in]]
+
+outlets(cp::Pipe)=[cp.conns[:out]]
+
+portnames(cp::Pipe)=[:in,:out]
+
+function equations(cp::Pipe)
+    i=cp.conn[:in];o=cp.conn[:out]
+    vec=[]
+    vec+=mass_res(cp)
+    vec+=i.h.val-o.h.val
+    vec+=cp.conns[:pr]*i.p.val-o.p.val
+    vec
 end
 
-function setattrs(comp::Pipe;kwargs...)
-
-end
-
-inlets(comp::Pipe)=[comp.conns[:in]]
-outlets(comp::Pipe)=[comp.conns[:out]]
-
-function addconnection(comp::Pipe,c::Connection,id::Symbol)
-    port=[:in,:out]
-    if id in port
-        comp.c[s]=c
-    else
-        println("wrong port name")
-    end
-end
-
-function jacobi(comp::Pipe,c::Connection)
-    i=comp.conn["in"];o=comp.conn["out"]
-    jac=zeros(3,3)
-    if c==i
-        jac[1,1]=1.0;jac[2,1]=i.h.val;jac[2,2]=i.m.val;jac[3,3]=1-comp.dp
-    end
-    if c==o
-        jac[1,1]=-1.0;jac[2,1]=-o.h.val;jac[2,2]=-o.m.val;jac[3,3]=-1.0
-    end
-    return jac
-end
-numberofequations(comp::Pipe)=4
-function equations(comp::Pipe)
-    i=comp.conn[:in];o=comp.conn[:out]
-    res=zeros(0)
-     
-    push!(res,i.m.val-o.m.val)
-    push!(res,i.m.val*i.h.val-o.m.val*o.h.val)
-    push!(res,i.p.val*(1-dp)-o.p.val)
-    res
+function derivatives(cp::Pipe)
+    i=cp.conn["in"];o=cp.conn["out"]
+    der=mass_deriv(cp)
+    e_der=zeros(1,2,3)
+    e_der[1,1,2]=1;e_der[1,2,2]=-1
+    der+=e_der
+    p_der=zeros(1,2,3)
+    p_der[1,1,3]=cp.conns[:pr];p_der[1,2,3]=-1
+    der+=p_der
+    return der
 end
 
 export Pipe,equations,jacobi,setattrs,addconnection
