@@ -24,15 +24,15 @@ function equations(cp::Turbine)
     in=cp.conns[:in];out=cp.conns[:out];attrs=cp.attrs
     res=[]
     res+=mass_res(cp)
-    if cp.conns[:eta].val_set
+    if cp.eta.val_set
        res+=eta_func(cp) 
     end
 
-    if cp.conns[:pr].val_set
+    if cp.pr.val_set
         res+=cp.conns[:pr]*in.p.val-out.p.val
     end
 
-    if cp.conns[:cone].val_set
+    if cp.cone.val_set
         res+=cone_func(cp)
     end
 
@@ -42,15 +42,15 @@ end
 function derivatives(cp::Turbine)
     in=cp.conns[:in];out=cp.conns[:out];attrs=cp.attrs
     der=mass_der(cp)
-    if cp.conns[:eta].val_set
+    if cp.eta.val_set
         der+=eta_deriv(cp)
     end
 
-    if cp.conns[:pr].val_set
+    if cp.pr.val_set
         der+=cp.conns[:pr]*in.p.val-out.p.val
     end
 
-    if cp.conns[:cone].val_set
+    if cp.cone.val_set
         der+=cone_func(cp)
     end
 
