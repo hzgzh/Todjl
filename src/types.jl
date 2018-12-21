@@ -5,6 +5,25 @@ using Parameters
 
 abstract type AbstractComponent end
 
+function Base.getproperty(a::AbstractComponent,x::Symbol)
+    props=propertynames(a)
+    if x in props
+        return getfield(a,x)
+    elseif x in keys(getfield(a,attrs))
+        return getfield(a,attrs)[x]
+    else
+        error("no such filed")
+    end
+end
+
+function Base.setproperty!(a::AbstractComponent,name::Symbol,x)
+    props=propertynames(a)
+    if name in props
+        setfie        
+    else
+        getfield(a,:attrs)[name]=x
+    end
+end
 
 abstract type AbstractVariable end
 
