@@ -1,52 +1,40 @@
-@with_kw mutable struct Pump<:AbstractComponent
+@with_kw mutable struct Pump<:AbstractTurboMachine
     label::String
     conns::Dict{Symbol,Connection}
     attrs::Dict{Symbol,Float64}
-    mode=:design
-    method=:no
     Pump(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
 end
 
 inlets(cp::Pump)=[cp.conns[:in]]
 outlets(cp::Pump)=[cp.conns[:out]]
-portnames(cp::Pump)=[:in,:out]
+ports(cp::Pump)=[:in,:out]
+attrs(cp::Pump)=[:pr,:eta]
 
-function equations(cp::Pump)
-    in=cp.conns[:in];out=cp.conns[:out];attrs=cp.attrs
+function additional_equations(cp::Pump)
+    in=cp.in;out=cp.out;
     vec=[]
-    vec+=mass_res(cp)
-    
-    if cp.conns[:eta].val_set
+        
+    if cp.eta.val_set
         eta_res=eta_func(cp)
         vec+=eta_res
     end
 
-    if cp.conns[:pr].val_set
-        pr_res=cp.conns[:pr]*in.p.val-out.p.val
-        vec+=pr_res
-    end
     return vec
 end
 
-function derivatives(cp::Pump,c::Connection)
-    in=cp.conns[:in];out=cp.conns[:out];attrs=cp.attrs
-    der=mass_deriv(cp)
-    if cp.conns[:eta].val_set
+function additional_derivatives(cp::Pump,c::Connection)
+    in=cp.in;out=cp.out
+    if cp.eta.val_set
         e_der=eta_deriv(cp)
         der+=e_der
     end
 
-    if cp.conns[:pr].val_set
-        p_der=zeros(1,2,3)
-        p_der[1,1,3]=cp.conns[:pr];p_der[1,2,3]=-1
-        der+=p_der
-    end
     return der
 end
 
 function eta_func(cp::Pump)
-    i=cp.conns[:in];o=cp.conns[:out]
-    return o.h.val-i.h.val-cp.attrs[:eta]*(o.h.val-psh(o.p.val,phs(i.p.val,i.h.val)))
+    i=cp.in;o=cp.out
+    return o.h.val-i.h.val-cp.eta.val*(o.h.val-psh(o.p.val,phs(i.p.val,i.h.val)))
 end
 
 function eta_der(cp::Pump)
@@ -59,7 +47,7 @@ function eta_der(cp::Pump)
 end
 
 function checkconverge(cp::Pump)
-    in,out=cp.conns[:in],cp.conns[:out]
+    in,out=cp.in,cp.out
     if !out.p.val_set && out.p.val<in.p.val
         out.p.val=2.0in.p.val
     end
@@ -75,12 +63,12 @@ function checkconverge(cp::Pump)
 end
 
 function bus_func(cp::Pump)
-    i=cp.conns[:in];o=cp.conns[:out]
+    i=cp.in;o=cp.out
     return i.m.val*(o.h.val-i.h.val)
 end
 
 function bus_deriv(cp::Pump)
-    i=cp.conns[:in];o=cp.conns[:out]
+    i=cp.in;o=cp.out
     b_der=zeros(1,2,3)
     b_der[1,1,1]=o.h.val-i.h.val
     b_der[1,1,2]=-i.m.val

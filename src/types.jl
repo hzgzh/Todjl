@@ -5,25 +5,7 @@ using Parameters
 
 abstract type AbstractComponent end
 
-function Base.getproperty(a::AbstractComponent,x::Symbol)
-    props=propertynames(a)
-    if x in props
-        return getfield(a,x)
-    elseif x in keys(getfield(a,attrs))
-        return getfield(a,attrs)[x]
-    else
-        error("no such filed")
-    end
-end
 
-function Base.setproperty!(a::AbstractComponent,name::Symbol,x)
-    props=propertynames(a)
-    if name in props
-        setfie        
-    else
-        getfield(a,:attrs)[name]=x
-    end
-end
 
 abstract type AbstractVariable end
 
@@ -44,7 +26,7 @@ end
 
 
 @with_kw mutable struct VarComp <: AbstractVariable
-    val::AbstractFloat=0
+    val::Float64=0
     val_set::Bool=false
     isvar::Bool=false
 end
@@ -127,6 +109,8 @@ function setattrs(c::Connection;kwargs...)
     end
 end
 
+to_flow(c::Connection)=[c.m.val,c.h.val,c.p.val]
+
 Base.show(c::Connection)=println("source=$(c.source.label) target=$(c.target.label) m=$(c.m.val) h=$(c.h.val) p=$(c.p.val)")
 
 mutable struct Bus
@@ -205,7 +189,7 @@ function mass_deriv(comp::AbstractComponent)
 end
 
 function addconnection(cp::AbstractComponent,port::Symbol,c::Connection)
-    ports=portnames(cp)
+    ports=ports(cp)
     if port in ports
         comp.conns[port]=c
     else
@@ -255,3 +239,76 @@ function derive(cp::AbstractComponent,func::Function,pos::Int64,dx::Symbol)
     return derive
 end
 
+function Base.getproperty(a::AbstractComponent,x::Symbol)
+    props=propertynames(a)
+    if x in props
+        return getfield(a,x)
+    elseif x in ports(a)
+        return getfield(a,conns)[x]
+    elseif x in attrs(cp)
+        return getfield(a,attrs)[x]
+    else
+        error("no such filed")
+    end
+end
+
+function Base.setproperty!(a::AbstractComponent,name::Symbol,x)
+    props=propertynames(a)
+    if name in props
+        setfie        
+    elseif name in attrs
+        getfield(a,:attrs)[name]=x
+    elseif name in ports
+        getfield(a,:conns)[name]=x
+    end
+end
+
+len(cp::AbstractComponent)=length(inlets(cp))+length(outlets(cp))
+
+function zeta_func(cp::AbstractComponent)
+        r"""
+        calculates pressure drop from zeta (zeta1 for heat exchangers)
+
+        :returns: residual value for the pressure drop
+
+        .. math::
+
+            \zeta = \frac{\Delta p \cdot v \cdot 2}{c^2}\\
+            c = \frac{\dot{m} \cdot v}{A}
+
+        As the cross sectional area A will not change from design to offdesign
+        calculation, it is possible to handle this the following way:
+
+        .. math::
+            0 = \zeta - \frac{(p_{in} - p_{out}) \cdot \pi^2}{8 \cdot
+            \dot{m}_{in}^2 \cdot \frac{v_{in} + v_{out}}{2}}
+        """
+        i = inlets(cp)[1]
+        o = outlets(cp)[1]
+        if haskey(cp.attrs,:zeta):
+            val = self.zeta.val
+        else:
+            val = self.zeta1.val
+        end
+        return (val - (i.p.val - o.p.val) * pi^2 /
+                (8 * i.m.val^2 * (phv(i.p.val,i.h.val) + phv(o.p.val,o.h.val)) / 2))
+end
+
+function zeta2_func(cp::AbstractComponent)
+    r"""
+    calculates pressure drop from zeta2
+    :returns: residual value for the pressure drop
+    .. math::
+        \zeta_2 = \frac{\Delta p_2 \cdot v_2 \cdot 2}{c_2^2}\\
+        c_2 = \frac{\dot{m}_2 \cdot v_2}{A_2}
+    As the cross sectional area A will not change from design to offdesign
+    calculation, it is possible to handle this the following way:
+    .. math::
+        0 = \zeta_2 - \frac{(p_{2,in} - p_{2,out}) \cdot \pi^2}{8 \cdot
+        \dot{m}_{2,in}^2 \cdot \frac{v_{2,in} + v_{2,out}}{2}}
+    """
+    i = inlets(cp)[2]
+    o = outlets(cp)[2]
+    return (cp.zeta2.val - (i.p.val - o.p.val) * pi^2 /
+            (8 * (i.m.val)^2 * (phv(i.p.val,i.h.val) + phv(o.p.val,o.h.val)) / 2))
+end

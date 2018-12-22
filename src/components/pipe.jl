@@ -9,28 +9,26 @@ end
 
 
 inlets(cp::Pipe)=[cp.conns[:in]]
-
 outlets(cp::Pipe)=[cp.conns[:out]]
-
-portnames(cp::Pipe)=[:in,:out]
-
+ports(cp::Pipe)=[:in,:out]
+attrs(cp::Pipe)=[:pr]
 function equations(cp::Pipe)
     i=cp.conn[:in];o=cp.conn[:out]
     vec=[]
     vec+=mass_res(cp)
     vec+=i.h.val-o.h.val
-    vec+=cp.conns[:pr]*i.p.val-o.p.val
+    vec+=cp.pr.val*i.p.val-o.p.val
     vec
 end
 
 function derivatives(cp::Pipe)
-    i=cp.conn["in"];o=cp.conn["out"]
+    i,o=cp.in,cp.out
     der=mass_deriv(cp)
     e_der=zeros(1,2,3)
     e_der[1,1,2]=1;e_der[1,2,2]=-1
     der+=e_der
     p_der=zeros(1,2,3)
-    p_der[1,1,3]=cp.conns[:pr];p_der[1,2,3]=-1
+    p_der[1,1,3]=cp.pr.val;p_der[1,2,3]=-1
     der+=p_der
     return der
 end

@@ -16,7 +16,7 @@ function equations(cp::Valve)
     res=[]
     res+=mass_res(cp)  
     res+=i.h.val-o.h.val
-    if cp.conns[:pr].isset
+    if cp.pr.isset
         res+=i.p.val*cp.conns[:pr]-o.p.val
     end
     res
@@ -29,7 +29,7 @@ function derivativescp::Valve)
     e_der[1,1,2]=1;e_der[1,2,2]=-1
     der+=e_der
 
-    if cp.conns[:pr].isset
+    if cp.pr.isset
         p_der=zeros(1,2,3)
         p_der[1,1,3]=cp.conns[:pr];p_der[1,2,3]=-1
         der+=p_der

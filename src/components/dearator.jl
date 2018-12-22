@@ -8,13 +8,12 @@
 end
 
 inlets(cp::Dearator)=[cp.conns[:hi] cp.conns[:ci] cp.conns[:drain]]
-
 outlets(cp::Dearator)=[cp.conns[:co]]
-
-portnames(cp::Dearator)=[:hi,:ci,:drain,:co]
+ports(cp::Dearator)=[:hi,:ci,:drain,:co]
+attrs(cp::Dearator)=[]
 
 function equations(cp::Dearator)
-    ci=cp.conns[:ci];hi=cp[:hi];di=cp[:drain];co=cp.conns[:co];a=cp.attrs
+    ci,hi,di,co=cp.ci,cp.hi,cp.drain,cp.co
     vec=[]
     vec+=mat_res(cp)
 
@@ -33,7 +32,7 @@ function equations(cp::Dearator)
 end
 
 function derivatives(cp::Dearator)
-    wi=cp.conns[:waterin];si=cp[:steam];di=cp[:drain];wo=cp.conns[:waterout];a=cp.attrs
+    ci,hi,di,co=cp.ci,cp.hi,cp.drain,cp.co
     der=mat_deriv(cp)
 
     e_der=zeros(1,4,3)

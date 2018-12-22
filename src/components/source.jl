@@ -1,14 +1,8 @@
 @with_kw mutable struct Source <: AbstractComponent
     label::String
     conns::Dict{Symbol,Connection}
-    attrs::Dict{Symbol,CVar}
-    mode=:design
-    method=:no
+    attrs::Dict{Symbol,VarProp}
     Source(s::String)=new(s,Dict{Symbol,Connection}(),Dict{Symbol,Float64}())
-end
-
-function (cp::Source)(;kwargs)
-    
 end
 
 inlets(cp::Source)=[]

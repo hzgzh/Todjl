@@ -9,10 +9,9 @@ end
 
 
 inlets(cp::Merge)=[cp.conns[:in1] cp.conns[:in2]]
-
 outlets(cp::Merge)=[cp.conns[:out1]]
-
-portnames(cp::Merge)=[:in1,:in2,:out]
+ports(cp::Merge)=[:in1,:in2,:out]
+attrs(cp::Merge)=[]
 
 function equations(cp::Merge)
     in1=cp.conns[:in1];in2=cp.conns[:in2];o=cp.conns[:out]
@@ -32,7 +31,7 @@ function equations(cp::Merge)
 end
 
 function derivatives(cp::Merge)
-    in1=cp.conns[:in1];in2=cp.conns[:in2];o=cp.conns[:out1]
+    in1=cp.in1;in2=cp.in2;o=cp.out1
     der=mass_deriv(cp)
 
     e_der=zeros(1,3,3)

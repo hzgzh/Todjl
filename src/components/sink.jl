@@ -10,6 +10,6 @@ inlets(cp::Source)=[cp.conns[:in]]
 
 outlets(cp::Source)=[]
 
-portnames(cp::Source)=[:in]
+ports(cp::Source)=[:in]
 
 export Sink

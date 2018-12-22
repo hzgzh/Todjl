@@ -8,21 +8,21 @@ end
 
 inlets(cp::Split)=[cp.conns[:in]]
 outlets(cp::Split)=[cp.conns[:out1] cp.conns[:out2]]
-portnames(cp::Split)=[:in,:out1,:out2]
-
+ports(cp::Split)=[:in,:out1,:out2]
+attrs(cp::Split)=[]
 function equations(cp::Split)
     in=cp.conns[:in];o1=cp.conns[:out1];o2=cp.conns[:out2]
     vec=[]
     vec+=mass_res(cp)
     e_res1=in.h.val-o1.h.val
-    vec+=e_res1
+   
     e_res2=in.h.val-o2.h.val
-    vec+=e_res2
+    
     p_res1=in.p.val-o1.p.val
-    vec+=p_res1
+    
     p_res2=in.p.val-o2.p.val
-    vec+=p_res2
-    return vecc
+    
+    return vec+=e_res1,e_res2,p_res1,p_res2
 end
 
 function derivatives(cp::Split)

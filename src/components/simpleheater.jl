@@ -9,23 +9,25 @@ end
 
 inlets(cp::SimpleHeater)=[cp.conns[:in]]
 outlets(cp::SimpleHeater)=[cp.conns[:out]]
-portnames(cp::SimpleHeater)=[:in,:out]
+ports(cp::SimpleHeater)=[:in,:out]
+attrs(cp::SimpleHeater)=[:pr]
+
 function equations(cp::SimpleHeater)
     vec=[]
     vec+=mass_res(cp)
-    if cp.attrs[:pr].isset
-        p_res=cp.attrs[:pr].val*inlets(cp)[0].p.val-outlets(cp).p.val
+    if cp.pr.val_set
+        p_res=cp.pr.val*inlets(cp)[0].p.val-outlets(cp)[0].p.val
         vec+=p_res
     end
     return vec
 end
 
 function derivatives(cp::SimpleHeater)
-    i=cp.conns[:in];o=cp.conns[:out];attrs=cp.attrs
+    i=cp.in;o=cp.out
     der=mass_deriv(cp)
-    if cp.attrs[:pr].isset
+    if cp.pr.val_set
         p_der=zeros(1,2,3)
-        p_der[1,1,3]=cp.attrs[:pr];p_der[1,2,3]=-1
+        p_der[1,1,3]=cp.pr.val;p_der[1,2,3]=-1
         der+=p_der
     end
     return der

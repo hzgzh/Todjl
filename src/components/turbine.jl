@@ -16,49 +16,28 @@ function callparamers(cp::Turbine)
     (ratio,criticalratio,cq,eta)
 end
 
-inlets(cp::Turbine)=[cp.conns[:in]];
-outlets(cp::Turbine)=[cp.conns[:out]]
-portnames(cp::Turbine)=[:in,:out]
+attrs(cp::Turbine)=[:pr,:cone,:eta]
 
-function equations(cp::Turbine)
-    in=cp.conns[:in];out=cp.conns[:out];attrs=cp.attrs
+function additional_equations(cp::Turbine)
+    in=cp.in;out=cp.out
     res=[]
-    res+=mass_res(cp)
-    if cp.eta.val_set
-       res+=eta_func(cp) 
-    end
-
-    if cp.pr.val_set
-        res+=cp.conns[:pr]*in.p.val-out.p.val
-    end
-
-    if cp.cone.val_set
-        res+=cone_func(cp)
-    end
-
+    
+    cp.eta.val_set && res+=eta_func(cp) 
+    cp.cone.val_set && res+=cone_func(cp)
     return res
 end
 
-function derivatives(cp::Turbine)
-    in=cp.conns[:in];out=cp.conns[:out];attrs=cp.attrs
-    der=mass_der(cp)
-    if cp.eta.val_set
-        der+=eta_deriv(cp)
-    end
-
-    if cp.pr.val_set
-        der+=cp.conns[:pr]*in.p.val-out.p.val
-    end
-
-    if cp.cone.val_set
-        der+=cone_func(cp)
-    end
-
+function additional_derivatives(cp::Turbine)
+    in=cp.in;out=cp.out
+       
+    cp.eta.val_set && der+=eta_deriv(cp)
+    cp.cone.val_set && der+=cone_func(cp)
+  
     return der
 end
 
 function cone_func(cp::Turbine)
-    in=cp.conns[:in];out=cp.conns[:out];cq=cp.attrs[:cq].val;cpr=cp.attrs[:cpr].val
+    in=cp.in;out=cp.out;cq=cp.cq.val;cpr=cp.cpr.val
     in.m.val-cq*sqrt(in.p.val/phv(in.p.val,in.h.val))*sqrt(1.0-((out.p.val/in.p.val-cpr)/(1.0-cpr))^2.0)
 end
 
@@ -70,7 +49,7 @@ function cone_der(cp::Turbine)
 end
 
 function eta_func(cp::Turbine)
-    in=cp.conns[:in];out=cp.conns[:out];eta=cp.attrs[:eta].val
+    in=cp.in;out=cp.out;eta=cp.eta.val
     return in.h.val-out.h.val-eta*(in.h.val-psh(out.p.val,phs(in.p.val,in.h.val)))
 end
 
@@ -82,20 +61,20 @@ function eta_der(cp::Turbine)
 end
 
 function bus_func(cp::Turbine)
-    i=cp.conns[:in];o=cp.conns[:out]
+    i=cp.in;o=cp.out
     return i.m.val*(i.h.val-o.h.val)
 end
 
 function bus_der(cp::Turbine)
-    i=cp.conns[:in];o=cp.conns[:out]
-    der=zeros(1,1,2)
+    i=cp.in;o=cp.out
+    der=zeros(1,2,2)
     der[1,1,1]=i.h.val-o.h.val;der[1,1,2]=i.m.val
     der[1,2,2]=-i.m.val
     return der
 end
 
 function checkconverge(cp::Turbine)
-    in,out=cp[:in],cp[:out]
+    in,out=cp.in,cp.out
     if !in.p.val_set && in.p.val<1
         i.p.val=1
     end
